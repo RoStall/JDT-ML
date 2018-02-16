@@ -13,6 +13,10 @@ library(dplyr)
 setwd('~/dropbox/nasa_stretch/force_features')
 data = read.csv('~/dropbox/nasa_stretch/force_features/force_emg_expl.csv')
 
+# This script outputs graphics to crossval and lassoplots
+dir.create("~/dropbox/nasa_stretch/force_features/lassoplots")
+dir.create("~/dropbox/nasa_stretch/force_features/crossval")
+
 # calculate the bilateral ratios (4 total)
 data$bmg_wav =(data$lmg_airsum + data$rmg_airsum)/(data$lmg_lsrsum + data$rmg_lsrsum)
 data$bmg_iemg =(data$lmg_iemg_air + data$rmg_iemg_air)/(data$lmg_iemg_lnd + data$rmg_iemg_lnd)
@@ -34,6 +38,8 @@ df.treatmenta = sep_plat[[5]]
 df.treatmentb = sep_plat[[6]]
 
 # Standardize iss predictor variables
+scale(df.iss[,5:24])
+
 
 # Split ISS cases
 day_split_iss = dlply(df.iss,"normTime", identity)
