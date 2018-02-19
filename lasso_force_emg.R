@@ -189,4 +189,33 @@ for(i in 25:34) {
 }
 
 
-# Grid search for F2F1
+# Show example of F2F1 LASSO and ELNET performance.
+
+foldid = sample(1:10,size=length(df.iss$F2F1),replace=TRUE)
+cv1=cv.glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss$F2F1),
+              foldid=foldid,alpha=1)
+
+cv.8=cv.glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss$F2F1),
+              foldid=foldid,alpha=.8)
+
+cv.5=cv.glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss$F2F1),
+              foldid=foldid,alpha=.5)
+
+cv.2=cv.glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss$F2F1),
+              foldid=foldid,alpha=.2)
+
+cv0=cv.glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss$F2F1),
+              foldid=foldid,alpha=0)
+
+png(filename = paste("enetcrossvals/CV_","alpha_behavior.png", sep = "", collapse=""),
+    res=300, width=6.5, height=6.5, units="in")
+plot(log(cv1$lambda),cv1$cvm,pch=19,col="red",xlab="log(Lambda)",ylab=cv1$name, cex.lab = 1.3)
+points(log(cv.8$lambda),cv.8$cvm,pch=19,col="black")
+points(log(cv.5$lambda),cv.5$cvm,pch=19,col="grey")
+points(log(cv.2$lambda),cv.2$cvm,pch=19,col="violet")
+points(log(cv0$lambda),cv0$cvm,pch=19,col="blue")
+legend("topright",legend=c("alpha = 1","alpha = 0.8","alpha = 0.5","alpha = 0.2","alpha = 0"),pch=19,
+       col=c("red","black","grey","violet","blue"))
+title(main = "Regularization Behavior for Range of Alpha", cex.main = 1.5)
+dev.off()
+
