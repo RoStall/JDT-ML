@@ -17,6 +17,10 @@ data = read.csv('~/dropbox/nasa_stretch/force_features/force_emg_expl.csv')
 dir.create("~/dropbox/nasa_stretch/force_features/lassoplots")
 dir.create("~/dropbox/nasa_stretch/force_features/crossval")
 
+# and elastic net graphics to enetcrossvals and enetplots
+dir.create("~/dropbox/nasa_stretch/force_features/enetplots")
+dir.create("~/dropbox/nasa_stretch/force_features/enetcrossvals")
+
 # calculate the bilateral ratios (4 total)
 data$bmg_wav =(data$lmg_airsum + data$rmg_airsum)/(data$lmg_lsrsum + data$rmg_lsrsum)
 data$bmg_iemg =(data$lmg_iemg_air + data$rmg_iemg_air)/(data$lmg_iemg_lnd + data$rmg_iemg_lnd)
@@ -120,3 +124,63 @@ for(k in 1:6){
     
   }
 }
+
+# elastic net, start with alpha = 0.5. Same loops. Exploratory. Days Separated.
+
+for(k in 1:6){
+  for(i in 25:34){
+    fit = glmnet(data.matrix(day_split_iss[[k]][,5:24]), data.matrix(day_split_iss[[k]][,i]), 
+                 lambda = cv.glmnet(data.matrix(day_split_iss[[k]][,5:24]), data.matrix(day_split_iss[[k]][,i]))$lambda.3se,
+                 alpha=0.5)
+    
+    png(filename = paste("enetplots/ResponseVariable_", colnames(day_split_iss[[k]])[i],"_ISS ",names(day_split_iss)[k],".png", sep="", collapse=""),
+        res =150, width=6.5, height=6.5, units="in")             
+    
+    plot(fit, lwd=2, label = FALSE)
+    par(mar=c(4.5,4.5,1,4))
+    vn=colnames(data)[5:24]
+    vnat=coef(fit)
+    vnat=vnat[-1,ncol(vnat)] # remove the intercept, and get the coefficients at the end of the path
+    axis(4, at=vnat,line=-3,label=vn,las=1,tick=FALSE, cex.axis=1) 
+    title(main = paste("Response Variable ", colnames(day_split_iss[[k]])[i],"_ISS ", names(day_split_iss[k])))
+    dev.off()
+    
+    png(filename = paste("enetcrossvals/CV_", colnames(day_split_iss[[k]])[i],"ISS ",names(day_split_iss[k]),".png", sep = "", collapse=""),
+        res=150, width=6.5, height=6.5, units="in")
+    cvfit = cv.glmnet(data.matrix(day_split_iss[[k]][,5:24]), data.matrix(day_split_iss[[k]][,i]))
+    plot(cvfit)
+    title(main = paste("Cross-Validation Response Variable ", colnames(day_split_iss[[k]])[i], "_ISS ", names(day_split_iss[k])), line=2)
+    dev.off()
+    
+  }
+}
+
+# elastic net alpha = 0.5 exploratory. unseparated days.
+
+for(i in 25:34) {
+  fit = glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss[,i]), 
+               lambda = cv.glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss[,i]))$lambda.3se,
+               alpha = 0.5)
+  
+  png(filename = paste("enetplots/ResponseVariable_", colnames(df.iss)[i] ,".png", sep="", collapse=""),
+      res =150, width=6.5, height=6.5, units="in")             
+  
+  plot(fit, lwd = 2, label = FALSE)
+  par(mar=c(4.5,4.5,1,4))
+  vn=colnames(data)[5:24]
+  vnat=coef(fit)
+  vnat=vnat[-1,ncol(vnat)] # remove the intercept, and get the coefficients at the end of the path
+  axis(4, at=vnat,line=-3,label=vn,las=1,tick=FALSE, cex.axis=1) 
+  title(main = paste("Response Variable ", colnames(df.iss)[i]))
+  dev.off()
+  
+  png(filename = paste("enetcrossvals/CV_", colnames(df.iss)[i],".png", sep = "", collapse=""),
+      res=150, width=6.5, height=6.5, units="in")
+  cvfit = cv.glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss[,i]))
+  plot(cvfit)
+  title(main = paste("Cross-Validation Response Variable ", colnames(df.iss)[i]),line=2)
+  dev.off()
+}
+
+
+# Grid search for F2F1
