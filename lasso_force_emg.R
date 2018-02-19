@@ -9,6 +9,8 @@ library(glmnet)
 library(plyr) # watch load order with dplyr
 library(dplyr)
  
+# filename_addf has f3f2,f3f1 calcs. 
+# take care if incorporating -- reorder cols changes.
 
 setwd('~/dropbox/nasa_stretch/force_features')
 data = read.csv('~/dropbox/nasa_stretch/force_features/force_emg_expl.csv')
@@ -27,7 +29,7 @@ data$bmg_iemg =(data$lmg_iemg_air + data$rmg_iemg_air)/(data$lmg_iemg_lnd + data
 data$bta_wav =(data$lta_airsum +data$rta_airsum)/(data$lta_lsrsum+ data$rta_lsrsum)
 data$bta_iemg = (data$lta_iemg_air + data$rta_iemg_air)/(data$lta_iemg_lnd + data$rta_iemg_lnd)
 
-data = data[,c(1:4,5:20, 31:34, 21:30)] # bilaterals between emg and force data
+data = data[,c(1:4,5:20, 31:34, 21:30)] #re-order cols. lhs = emg, rhs = force vars
 
 
 # split data frames by platform
@@ -72,9 +74,13 @@ for(k in 1:6){
 
 palette(brewer.pal(12,"Paired"))
 
+# suppress NA to 0 for F3F2 which has large number of such values
+data[is.na(data)] = 0
+
 # lasso loops for entire ISS data (days unseparated)
-for(i in 25:34) {
-  fit = glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss[,i]), 
+for(i in 25:34){
+  print(i)
+  fit = glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss[,i]),
                lambda = cv.glmnet(data.matrix(df.iss[,5:24]), data.matrix(df.iss[,i]))$lambda.3se)
   
   png(filename = paste("lassoplots/ResponseVariable_", colnames(df.iss)[i] ,".png", sep="", collapse=""),
