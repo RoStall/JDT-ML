@@ -59,9 +59,9 @@ grid.table(df.iss[1:30,c(1:10,26:28)])
 dev.off()
 
 # study correlograms for various cases, see if they very based on JDT days.
-png(filename = 'corrs/corrgram.png', width=13.3, height=7.5, units = "in", res = 150)
+png(filename = 'corrs/corrgram.png', width=13.3, height=7.5, units = "in", res = 300)
 corrgram(df.iss[,5:24], upper.panel = panel.pts)
-title(main = "Design Matrix Correlogram ISS All")
+title(main = "Design Matrix Correlogram ISS")
 dev.off()
 
 for(k in 1:6){
