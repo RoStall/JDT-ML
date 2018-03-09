@@ -95,8 +95,8 @@ y = le.transform(y)
 cv = StratifiedKFold(n_splits=5)
 
 random_state = np.random.RandomState(0)
-classifier = svm.SVC(kernel='linear', probability=True,
-                     random_state=random_state, C=5)
+classifier = svm.SVC(kernel='rbf', probability=True,
+                     gamma=.01, C=21.54)
 tprs = []
 aucs = []
 mean_fpr = np.linspace(0, 1, 100)
@@ -136,8 +136,8 @@ plt.xlim([-0.05, 1.05])
 plt.ylim([-0.05, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title('Linear SVM ROC Curves')
+plt.title('RBF SVM ROC Curves')
 plt.legend(loc="lower right", fontsize='small')
 # plt.show()
-plt.savefig('/Users/robertstallard/Dropbox/NASA_stretch/JDT-ML/graphics/roc_linear_svc_5fold_scaled.png', dpi=350,
+plt.savefig('/Users/robertstallard/Dropbox/NASA_stretch/JDT-ML/graphics/roc_rbf_svc_5fold_scaled.png', dpi=350,
             bbox='tight')

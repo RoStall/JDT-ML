@@ -3,12 +3,46 @@ import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')  # backend error workaround
 import matplotlib.pyplot as plt
-from scipy import interp
 from sklearn import svm
 from sklearn import preprocessing
-from sklearn.metrics import roc_curve, auc
-from sklearn.model_selection import StratifiedKFold
-from sklearn.preprocessing import StandardScaler
+
+
+def make_meshgrid(x, y, h=.02):
+    """Create a mesh of points to plot in
+
+    Parameters
+    ----------
+    x: data to base x-axis meshgrid on
+    y: data to base y-axis meshgrid on
+    h: stepsize for meshgrid, optional
+
+    Returns
+    -------
+    xx, yy : ndarray
+    """
+    x_min, x_max = x.min() - 1, x.max() + 1
+    y_min, y_max = y.min() - 1, y.max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
+                         np.arange(y_min, y_max, h))
+    return xx, yy
+
+
+def plot_contours(ax, clf, xx, yy, **params):
+    """Plot the decision boundaries for a classifier.
+
+    Parameters
+    ----------
+    ax: matplotlib axes object
+    clf: a classifier
+    xx: meshgrid ndarray
+    yy: meshgrid ndarray
+    params: dictionary of params to pass to contourf, optional
+    """
+    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    out = ax.contourf(xx, yy, Z, **params)
+    return out
+
 
 # load data ~/dropbox/nasa_stretch/force_features/force_emg_expl.csv
 
@@ -80,64 +114,48 @@ c_e_iss_predictors = c_e_iss.loc[:, 'lmg_airsum':'bta_iemg']
 c_e_iss_F2F1 = c_e_iss['F2F1']
 
 X = c_e_iss_predictors[['bta_iemg', 'bmg_iemg']]
-y = c_e_iss['normTime']  # need categories for SVC, may need c and e.
-
+y = c_e_iss['normTime']
 X = X.as_matrix()
+X = preprocessing.scale(X)
 y = y.as_matrix()
-
-scaler = StandardScaler()
-X = scaler.fit_transform(X)
 
 le = preprocessing.LabelEncoder()
 le.fit(y)
 y = le.transform(y)
 
-cv = StratifiedKFold(n_splits=5)
 
-random_state = np.random.RandomState(0)
-classifier = svm.SVC(kernel='linear', probability=True,
-                     random_state=random_state, C=5)
-tprs = []
-aucs = []
-mean_fpr = np.linspace(0, 1, 100)
+# we create an instance of SVM and fit out data. We do not scale our
+# data since we want to plot the support vectors
+C = 5.0  # SVM regularization parameter
+models = (svm.SVC(kernel='linear', C=C),
+          svm.LinearSVC(C=C),
+          svm.SVC(kernel='rbf', gamma=0.99, C=C),
+          svm.SVC(kernel='poly', degree=3, C=C))
+models = (clf.fit(X, y) for clf in models)
 
-i = 0
-for train, test in cv.split(X, y):
-    # print(X[test])
-    probas_ = classifier.fit(X[train], y[train]).predict_proba(X[test])
-    # Compute ROC curve and area the curve
-    fpr, tpr, thresholds = roc_curve(y[test], probas_[:, 1])
-    tprs.append(interp(mean_fpr, fpr, tpr))
-    tprs[-1][0] = 0.0
-    roc_auc = auc(fpr, tpr)
-    aucs.append(roc_auc)
-    plt.plot(fpr, tpr, lw=1.5, alpha=0.3,
-             label='ROC fold %d (AUC = %0.2f)' % (i, roc_auc))
+# title for the plots
+titles = ('SVC with linear kernel',
+          'LinearSVC (linear kernel)',
+          'SVC with RBF kernel',
+          'SVC with polynomial (degree 3) kernel')
 
-    i += 1
-plt.plot([0, 1], [0, 1], linestyle='--', lw=2, color='r',
-         label='Chance', alpha=.8)
+# Set-up 2x2 grid for plotting.
+fig, sub = plt.subplots(2, 2)
+plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
-mean_tpr = np.mean(tprs, axis=0)
-mean_tpr[-1] = 1.0
-mean_auc = auc(mean_fpr, mean_tpr)
-std_auc = np.std(aucs)
-plt.plot(mean_fpr, mean_tpr, color='b',
-         label=r'Mean ROC (AUC = %0.2f $\pm$ %0.2f)' % (mean_auc, std_auc),
-         lw=2, alpha=.8)
+X0, X1 = X[:, 0], X[:, 1]
+xx, yy = make_meshgrid(X0, X1)
 
-std_tpr = np.std(tprs, axis=0)
-tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-                 label=r'$\pm$ 1 std. dev.')
+for clf, title, ax in zip(models, titles, sub.flatten()):
+    plot_contours(ax, clf, xx, yy,
+                  cmap=plt.cm.seismic, alpha=0.8)
+    ax.scatter(X0, X1, c=y, cmap=plt.cm.seismic, s=20, edgecolors='k')
+    ax.set_xlim(xx.min(), xx.max())
+    ax.set_ylim(yy.min(), yy.max())
+    ax.set_xlabel('Sepal length')
+    ax.set_ylabel('Sepal width')
+    ax.set_xticks(())
+    ax.set_yticks(())
+    ax.set_title(title)
 
-plt.xlim([-0.05, 1.05])
-plt.ylim([-0.05, 1.05])
-plt.xlabel('False Positive Rate')
-plt.ylabel('True Positive Rate')
-plt.title('Linear SVM ROC Curves')
-plt.legend(loc="lower right", fontsize='small')
-# plt.show()
-plt.savefig('/Users/robertstallard/Dropbox/NASA_stretch/JDT-ML/graphics/roc_linear_svc_5fold_scaled.png', dpi=350,
-            bbox='tight')
+plt.show()
