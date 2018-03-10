@@ -5,6 +5,7 @@ matplotlib.use('TkAgg')  # backend error workaround
 import matplotlib.pyplot as plt
 from sklearn import svm
 from sklearn import preprocessing
+from sklearn.preprocessing import StandardScaler
 
 
 def make_meshgrid(x, y, h=.02):
@@ -116,7 +117,8 @@ c_e_iss_F2F1 = c_e_iss['F2F1']
 X = c_e_iss_predictors[['bta_iemg', 'bmg_iemg']]
 y = c_e_iss['normTime']
 X = X.as_matrix()
-X = preprocessing.scale(X)
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
 y = y.as_matrix()
 
 le = preprocessing.LabelEncoder()
@@ -128,20 +130,16 @@ y = le.transform(y)
 # data since we want to plot the support vectors
 C = 5.0  # SVM regularization parameter
 models = (svm.SVC(kernel='linear', C=C),
-          svm.LinearSVC(C=C),
-          svm.SVC(kernel='rbf', gamma=0.99, C=C),
-          svm.SVC(kernel='poly', degree=3, C=C))
+          svm.SVC(kernel='rbf', gamma=.1, C=6000))
 models = (clf.fit(X, y) for clf in models)
 
 # title for the plots
-titles = ('SVC with linear kernel',
-          'LinearSVC (linear kernel)',
-          'SVC with RBF kernel',
-          'SVC with polynomial (degree 3) kernel')
+titles = ('SVM with linear kernel',
+          'SVM with RBF kernel')
 
-# Set-up 2x2 grid for plotting.
-fig, sub = plt.subplots(2, 2)
-plt.subplots_adjust(wspace=0.4, hspace=0.4)
+# Set-up 1x2 grid for plotting.
+fig, sub = plt.subplots(1, 2)
+# plt.subplots_adjust(wspace=0.4, hspace=0.4)
 
 X0, X1 = X[:, 0], X[:, 1]
 xx, yy = make_meshgrid(X0, X1)
@@ -150,10 +148,10 @@ for clf, title, ax in zip(models, titles, sub.flatten()):
     plot_contours(ax, clf, xx, yy,
                   cmap=plt.cm.seismic, alpha=0.8)
     ax.scatter(X0, X1, c=y, cmap=plt.cm.seismic, s=20, edgecolors='k')
-    ax.set_xlim(xx.min(), xx.max())
-    ax.set_ylim(yy.min(), yy.max())
-    ax.set_xlabel('Sepal length')
-    ax.set_ylabel('Sepal width')
+    ax.set_xlim(xx.min()/2, xx.max()/2)
+    ax.set_ylim(yy.min()/2, yy.max()/2)
+    ax.set_xlabel('BTA_iEMG')
+    ax.set_ylabel('BMG_iEMG')
     ax.set_xticks(())
     ax.set_yticks(())
     ax.set_title(title)
