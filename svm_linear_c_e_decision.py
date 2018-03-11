@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from sklearn import svm
 from sklearn import preprocessing
 from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import GridSearchCV
 
 
 def make_meshgrid(x, y, h=.02):
@@ -124,13 +126,26 @@ y = y.as_matrix()
 le = preprocessing.LabelEncoder()
 le.fit(y)
 y = le.transform(y)
+#
+# C_range = np.logspace(-2, 8, 15)  # originally -2 10 13
+# gamma_range = np.logspace(-9, 3, 15)  # originally -9 3 13
+# param_grid = dict(gamma=gamma_range, C=C_range)
+# cv = StratifiedShuffleSplit(n_splits=5, test_size=0.1, random_state=None)
+# grid = GridSearchCV(svm.SVC(), param_grid=param_grid, cv=cv)
+# grid.fit(X, y)
+#
+# print("The best parameters are %s with a score of %0.2f"
+#       % (grid.best_params_, grid.best_score_))
+# best_gamma = grid.best_params_.get('gamma')
+# best_C = grid.best_params_.get('C')
 
+# good result from previous run: gamma = 19.306977 C = 1.389
 
 # we create an instance of SVM and fit out data. We do not scale our
 # data since we want to plot the support vectors
-C = 5.0  # SVM regularization parameter
-models = (svm.SVC(kernel='linear', C=C),
-          svm.SVC(kernel='rbf', gamma=.1, C=6000))
+# C = 5.0  # SVM regularization parameter
+models = (svm.SVC(kernel='linear', C=5),
+          svm.SVC(kernel='rbf', gamma=19.306977, C=1.389))
 models = (clf.fit(X, y) for clf in models)
 
 # title for the plots
@@ -146,8 +161,8 @@ xx, yy = make_meshgrid(X0, X1)
 
 for clf, title, ax in zip(models, titles, sub.flatten()):
     plot_contours(ax, clf, xx, yy,
-                  cmap=plt.cm.seismic, alpha=0.8)
-    ax.scatter(X0, X1, c=y, cmap=plt.cm.seismic, s=20, edgecolors='k')
+                  cmap=plt.cm.plasma, alpha=0.8)
+    ax.scatter(X0, X1, c=y, cmap=plt.cm.plasma, s=20, edgecolors='k')
     ax.set_xlim(xx.min()/2, xx.max()/2)
     ax.set_ylim(yy.min()/2, yy.max()/2)
     ax.set_xlabel('BTA_iEMG')
@@ -156,4 +171,5 @@ for clf, title, ax in zip(models, titles, sub.flatten()):
     ax.set_yticks(())
     ax.set_title(title)
 
-plt.show()
+plt.savefig('/Users/robertstallard/Dropbox/NASA_stretch/JDT-ML/graphics/svm_dec_surface.png', dpi=350,
+            bbox='tight')
